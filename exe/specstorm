@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require "specstorm/cli/commands"
+
+Dry::CLI.new(Specstorm::CLI::Commands).call
