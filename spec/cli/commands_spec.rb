@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "specstorm/cli/commands"
+require "specstorm/srv"
+require "specstorm/wrk"
 
 RSpec.describe Specstorm::CLI::Commands do
   let(:cli) { Dry::CLI.new(Specstorm::CLI::Commands) }
