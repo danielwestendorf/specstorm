@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/danielwestendorf/specstorm-srv.git
-  revision: af0106659148495e18f8bee775118f47b5838b1b
+  revision: 1cb11ab1e2238f9867ad8032d968d49514df57f2
   specs:
     specstorm-srv (0.1.0)
       puma
@@ -9,7 +9,7 @@ GIT
 
 GIT
   remote: https://github.com/danielwestendorf/specstorm-wrk.git
-  revision: 3912a831dc856aa7ef4e7192a13891001efd16a8
+  revision: 8ad30267512a2c6b05aa9c1b4c20ecbcbce7b96c
   specs:
     specstorm-wrk (0.1.0)
 
@@ -80,7 +80,7 @@ GEM
       rubocop-ast (>= 1.38.0, < 2.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 2.4.0, < 4.0)
-    rubocop-ast (1.43.0)
+    rubocop-ast (1.44.0)
       parser (>= 3.3.7.2)
       prism (~> 1.4)
     rubocop-performance (1.24.0)
