@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
+require "etc"
 require "dry/cli"
 
 require "specstorm/supervisor"
-
-require "specstorm/wrk"
-require "specstorm/srv"
 
 module Specstorm
   module CLI
@@ -33,6 +31,8 @@ module Specstorm
         end
 
         def spawn_worker(duration:)
+          require "specstorm/wrk"
+
           supervisor.spawn do
             ENV["SPECSTORM_PROCESS"] = @count.to_s
             Specstorm::Wrk.run(duration: duration.to_i)
@@ -70,6 +70,8 @@ module Specstorm
         desc "Start a server"
 
         def call(port:, **)
+          require "specstorm/srv"
+
           Specstorm::Srv.serve(port: port.to_i)
         end
       end
@@ -83,6 +85,8 @@ module Specstorm
         desc "Start a server and worker"
 
         def call(duration:, port:, worker_processes:, verbose:, **)
+          require "specstorm/srv"
+
           srv_forked_process = supervisor.spawn(true) { Specstorm::Srv.serve(port: port.to_i) }
           srv_forked_process.stdout = srv_forked_process.stderr = File.open(File::NULL, "w") unless verbose
 
