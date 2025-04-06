@@ -51,9 +51,21 @@ RSpec.describe Specstorm::CLI::Commands do
 
   describe "start" do
     it "runs the worker and server" do
+      srv_dbl = instance_double(Specstorm::ForkedProcess)
+      expect(srv_dbl).to receive(:stdout=)
+        .with(instance_of(File))
+      expect(srv_dbl).to receive(:stderr=)
+        .with(instance_of(File))
+
       allow(supervisor_dbl).to receive(:spawn)
+        .with(true)
         .and_yield
-        .and_return(SecureRandom.rand(1..1000))
+        .and_return(srv_dbl)
+
+      allow(supervisor_dbl).to receive(:spawn)
+        .with(no_args)
+        .and_yield
+        .and_return(instance_double(Specstorm::ForkedProcess))
 
       expect(Specstorm::Wrk).to receive(:run)
         .with(duration: 1)

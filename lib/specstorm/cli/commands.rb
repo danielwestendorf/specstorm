@@ -33,13 +33,13 @@ module Specstorm
         end
 
         def spawn_worker(duration:)
-          @count ||= -1
-          @count += 1
-
           supervisor.spawn do
             ENV["SPECSTORM_PROCESS"] = @count.to_s
             Specstorm::Wrk.run(duration: duration.to_i)
           end
+
+          @count ||= 0
+          @count += 1
         end
 
         def supervisor
@@ -78,10 +78,13 @@ module Specstorm
         include Workable
         include Servable
 
+        option :verbose, type: :boolean, default: false, aliases: ["-vv"], desc: "Verbose output"
+
         desc "Start a server and worker"
 
-        def call(duration:, port:, worker_processes:, **)
-          supervisor.spawn(true) { Specstorm::Srv.serve(port: port.to_i) }
+        def call(duration:, port:, worker_processes:, verbose:, **)
+          srv_forked_process = supervisor.spawn(true) { Specstorm::Srv.serve(port: port.to_i) }
+          srv_forked_process.stdout = srv_forked_process.stderr = File.open(File::NULL, "w") unless verbose
 
           spawn_workers(duration: duration, worker_processes: worker_processes)
 
