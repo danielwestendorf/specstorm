@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "strscan"
+
 module Specstorm
   class ForkedProcess
     FLUSH_DELIMINATOR = "SPECSTORM--FLUSH--DELIMINATOR"
@@ -69,8 +71,6 @@ module Specstorm
       @infrastructure
     end
 
-    private
-
     def flush_reader_to_buffer(reader:, buffer:, to:)
       loop do
         buffer << reader.read_nonblock(1024)
@@ -80,16 +80,29 @@ module Specstorm
 
       return if buffer.length.zero?
 
-      chunks = buffer.split(FLUSH_DELIMINATOR)
-      buffer.clear
-      buffer << chunks.pop if !infrastructure? && running? && chunks.last != FLUSH_DELIMINATOR
+      if infrastructure? || !running?
+        # Always flush everything in infra or the process is no longer running
+        echo(chunks: buffer.split(FLUSH_DELIMINATOR), to: to)
+        buffer.clear
+      else
+        scanner = StringScanner.new(buffer)
+        chunks = []
 
-      echo(chunks: chunks, to: to)
+        while (match = scanner.scan_until(FLUSH_DELIMINATOR))
+          chunks << match.sub(FLUSH_DELIMINATOR, "")
+        end
+
+        remainder = scanner.rest
+        buffer.clear
+        buffer << remainder if remainder
+
+        echo(chunks: chunks, to: to)
+      end
     end
 
     def echo(chunks:, to:)
       chunks.each do |chunk|
-        to.print chunk unless chunk == FLUSH_DELIMINATOR
+        to.print chunk
       end
     end
   end

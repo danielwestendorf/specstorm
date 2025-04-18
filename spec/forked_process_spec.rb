@@ -8,8 +8,7 @@ RSpec.describe Specstorm::ForkedProcess do
 
     let(:blk) {
       -> {
-        puts "mocked stdout"
-        warn "mocked stderr"
+        $stdout.puts "mocked stdout"
       }
     }
 
@@ -20,6 +19,7 @@ RSpec.describe Specstorm::ForkedProcess do
       allow($stderr).to receive(:reopen)
       allow($stdout).to receive(:sync=)
       allow($stderr).to receive(:sync=)
+      allow($stdout).to receive(:puts)
     end
 
     it "calls the block and returns an instance with a pid" do
@@ -30,6 +30,10 @@ RSpec.describe Specstorm::ForkedProcess do
     it "redirects stdout and stderr to writer ends" do
       expect($stdout).to receive(:reopen).with(forked_process.stdout_writer)
       expect($stderr).to receive(:reopen).with(forked_process.stderr_writer)
+
+      expect($stdout).to receive(:puts)
+        .and_return(true)
+
       described_class.fork(&blk)
     end
   end
@@ -130,6 +134,146 @@ RSpec.describe Specstorm::ForkedProcess do
       process = described_class.new
       process.infrastructure = true
       expect(process.infrastructure?).to be true
+    end
+  end
+
+  describe "#flush_pipes" do
+    let(:instance) { described_class.new }
+
+    it "calls #flush_reader_to_buffer for each reader" do
+      expect(instance).to receive(:flush_reader_to_buffer)
+        .with(reader: instance.stdout_reader, buffer: instance.instance_variable_get(:@stdout_output_buffer), to: instance.stdout)
+      expect(instance).to receive(:flush_reader_to_buffer)
+        .with(reader: instance.stderr_reader, buffer: instance.instance_variable_get(:@stderr_output_buffer), to: instance.stderr)
+
+      instance.flush_pipes
+    end
+  end
+
+  describe "#echo" do
+    let(:instance) { described_class.new }
+    let(:chunks) { ["foo", "bar"] }
+    let(:to) { IO.pipe.last }
+
+    it "prints each chunk except the deliminator" do
+      expect(to).to receive(:print)
+        .with("foo")
+
+      expect(to).to receive(:print)
+        .with("bar")
+
+      instance.echo(chunks: chunks, to: to)
+    end
+  end
+
+  describe "#flush_reader_to_buffer" do
+    subject { instance.flush_reader_to_buffer(reader: reader, buffer: buffer, to: to_dbl) }
+
+    let(:instance) { described_class.new }
+    let(:pipes) { IO.pipe }
+    let(:reader) { pipes.first }
+    let(:writer) { pipes.last }
+    let(:buffer) { String.new } # standard:disable Performance/UnfreezeString
+    let(:to_dbl) { instance_double(IO) }
+
+    context "nothing flushed to the buffer" do
+      it "doesn't echo, doesn't block" do
+        expect(instance).not_to receive(:echo)
+
+        subject
+      end
+    end
+
+    context "non-blank buffer" do
+      let(:instance) { described_class.new }
+      let(:content_to_buffer) { "foo#{described_class::FLUSH_DELIMINATOR}bar" }
+
+      before do
+        writer.print content_to_buffer
+      end
+
+      context "infrastructure" do
+        before do
+          allow(instance).to receive(:running?)
+            .and_return(true)
+
+          allow(instance).to receive(:infrastructure?)
+            .and_return(true)
+        end
+
+        it "echos foo and bar" do
+          expect(instance).to receive(:echo)
+            .with(chunks: ["foo", "bar"], to: to_dbl)
+
+          subject
+        end
+      end
+
+      context "no longer running?" do
+        before do
+          allow(instance).to receive(:running?)
+            .and_return(false)
+
+          allow(instance).to receive(:infrastructure?)
+            .and_return(true)
+        end
+
+        it "echos foo and bar" do
+          expect(instance).to receive(:echo)
+            .with(chunks: ["foo", "bar"], to: to_dbl)
+
+          subject
+        end
+      end
+
+      context "running non-infrastructure" do
+        before do
+          allow(instance).to receive(:running?)
+            .and_return(true)
+
+          allow(instance).to receive(:infrastructure?)
+            .and_return(false)
+        end
+
+        context "no deliminator" do
+          let(:content_to_buffer) { "foobar" }
+
+          it "doesn't echo any chunks, pushes back to buffer" do
+            expect(instance).to receive(:echo)
+              .with(chunks: [], to: to_dbl)
+
+            subject
+
+            expect(buffer).to eq("foobar")
+          end
+        end
+
+        context "has deliminator, but does not end with deliminator" do
+          let(:content_to_buffer) { "foo#{described_class::FLUSH_DELIMINATOR}bar" }
+
+          it "echos first chunk, pushes remainder back to buffer" do
+            expect(instance).to receive(:echo)
+              .with(chunks: ["foo"], to: to_dbl)
+
+            subject
+
+            expect(buffer).to eq("bar")
+          end
+        end
+
+        context "ends with deliminator" do
+          let(:content_to_buffer) { "foo#{described_class::FLUSH_DELIMINATOR}bar#{described_class::FLUSH_DELIMINATOR}" }
+
+          it "echos all chunks, buffer is now clear" do
+            expect(instance).to receive(:echo)
+              .with(chunks: ["foo", "bar"], to: to_dbl)
+
+            subject
+
+            expect(buffer).to eq("")
+          end
+        end
+      end
     end
   end
 end
