@@ -21,21 +21,20 @@ module Specstorm
       module Workable
         def self.included(base)
           base.option :worker_processes, type: :integer, default: Etc.nprocessors, aliases: ["-n", "--number"], desc: "Number of workers"
-          base.option :duration, type: :integer, default: 10, aliases: ["-d"], desc: "Simulate work for this long"
         end
 
-        def spawn_workers(duration:, worker_processes:)
+        def spawn_workers(worker_processes:)
           [1, worker_processes.to_i].max.times do
-            spawn_worker(duration: duration)
+            spawn_worker
           end
         end
 
-        def spawn_worker(duration:)
+        def spawn_worker
           require "specstorm/wrk"
 
           supervisor.spawn do
             ENV["SPECSTORM_PROCESS"] = @count.to_s
-            Specstorm::Wrk.run(duration: duration.to_i)
+            Specstorm::Wrk.run
           end
 
           @count ||= 0
@@ -52,8 +51,8 @@ module Specstorm
 
         desc "Start a worker"
 
-        def call(duration:, worker_processes:, **args)
-          spawn_workers(duration: duration, worker_processes: worker_processes)
+        def call(worker_processes:, **args)
+          spawn_workers(worker_processes: worker_processes)
           supervisor.wait
         end
       end
@@ -82,15 +81,26 @@ module Specstorm
 
         option :verbose, type: :boolean, default: false, aliases: ["-vv"], desc: "Verbose output"
 
+        argument :dir, required: true, default: "spec", desc: "Relative spec directory to run against"
+
         desc "Start a server and worker"
 
-        def call(duration:, port:, worker_processes:, verbose:, **)
+        def call(port:, worker_processes:, verbose:, dir:, **)
           require "specstorm/srv"
+          require "specstorm/list_examples"
+          require "specstorm/wrk/client"
 
-          srv_forked_process = supervisor.spawn(true) { Specstorm::Srv.serve(port: port.to_i) }
-          srv_forked_process.stdout = srv_forked_process.stderr = File.open(File::NULL, "w") unless verbose
+          path = File.expand_path(dir, Dir.pwd)
 
-          spawn_workers(duration: duration, worker_processes: worker_processes)
+          supervisor.spawn(true) do
+            Specstorm::Srv.seed(examples: Specstorm::ListExamples.new(path).examples)
+
+            Specstorm::Srv.serve(port: port.to_i, verbose: verbose)
+          end
+
+          sleep(0.1) until Specstorm::Wrk::Client.connect?
+
+          spawn_workers(worker_processes: worker_processes)
 
           supervisor.wait
         end

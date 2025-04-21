@@ -30,10 +30,10 @@ module Specstorm
     def stop(group_notification)
       group_notification.notifications.map do |notification|
         @examples << {
-          :id => notification.example.id,
-          :full_description => notification.example.full_description,
-          :file_path => notification.example.metadata[:file_path],
-          :line_number  => notification.example.metadata[:line_number],
+          id: notification.example.id,
+          full_description: notification.example.full_description,
+          file_path: notification.example.metadata[:file_path],
+          line_number: notification.example.metadata[:line_number]
         }
       end
     end

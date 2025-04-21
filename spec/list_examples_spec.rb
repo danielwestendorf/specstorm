@@ -3,12 +3,12 @@
 require "specstorm/list_examples"
 
 RSpec.describe Specstorm::ListExamples do
-  describe "#examples" do 
+  describe "#examples" do
     subject { instance.examples }
 
     let(:instance) { described_class.new("foo") }
     let(:runner_dbl) { instance_double(RSpec::Core::Runner) }
-    let(:tmpfile_dbl) do 
+    let(:tmpfile_dbl) do
       instance_double(Tempfile).tap do |dbl|
         allow(Tempfile).to receive(:new)
           .and_return(dbl)
@@ -24,7 +24,7 @@ RSpec.describe Specstorm::ListExamples do
 
       expect(RSpec.configuration).to receive(:add_formatter)
         .with(instance)
-      
+
       expect(RSpec.configuration).to receive(:files_to_run)
         .and_return(["1_spec.rb", "2_spec.rb"])
 
@@ -77,8 +77,7 @@ RSpec.describe Specstorm::ListExamples do
         metadata: {
           file_path: "spec/models/foo_spec.rb",
           line_number: 42
-        }
-      )
+        })
     end
 
     let(:notification_dbl) { instance_double(RSpec::Core::Notifications::ExampleNotification, example: example_dbl) }

@@ -21,6 +21,9 @@ module Specstorm
         $stdout.reopen(instance.stdout_writer)
         $stderr.reopen(instance.stderr_writer)
 
+        $stdout.define_singleton_method(:tty?) { true }
+        $stderr.define_singleton_method(:tty?) { true }
+
         $stdout.sync = true
         $stderr.sync = true
 

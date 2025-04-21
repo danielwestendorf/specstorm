@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "specstorm/cli/commands"
+require "specstorm/list_examples"
 require "specstorm/srv"
 require "specstorm/wrk"
 
@@ -33,7 +34,6 @@ RSpec.describe Specstorm::CLI::Commands do
         .and_return(SecureRandom.rand(1..1000))
 
       expect(Specstorm::Wrk).to receive(:run)
-        .with(duration: 10)
         .and_return(true)
         .exactly(Etc.nprocessors)
 
@@ -47,17 +47,16 @@ RSpec.describe Specstorm::CLI::Commands do
         .with(port: 5138)
         .and_return(true)
 
-      cli.call(arguments: ["serve"])
+      cli.call(arguments: ["serve", "spec"])
     end
   end
 
   describe "start" do
     it "runs the worker and server" do
+      allow(Specstorm::Wrk::Client).to receive(:connect?)
+        .and_return(true)
+
       srv_dbl = instance_double(Specstorm::ForkedProcess)
-      expect(srv_dbl).to receive(:stdout=)
-        .with(instance_of(File))
-      expect(srv_dbl).to receive(:stderr=)
-        .with(instance_of(File))
 
       allow(supervisor_dbl).to receive(:spawn)
         .with(true)
@@ -70,16 +69,26 @@ RSpec.describe Specstorm::CLI::Commands do
         .and_return(instance_double(Specstorm::ForkedProcess))
 
       expect(Specstorm::Wrk).to receive(:run)
-        .with(duration: 1)
         .and_return(true)
         .exactly(Etc.nprocessors)
 
+      list_examples_dbl = instance_double(Specstorm::ListExamples)
+      expect(Specstorm::ListExamples).to receive(:new)
+        .with(File.expand_path("spec", Dir.pwd))
+        .and_return(list_examples_dbl)
+
+      expect(list_examples_dbl).to receive(:examples)
+        .and_return([])
+
+      expect(Specstorm::Srv).to receive(:seed)
+        .with(examples: [])
+
       expect(Specstorm::Srv).to receive(:serve)
-        .with(port: 5139)
+        .with(port: 5139, verbose: true)
         .and_return(true)
         .once
 
-      cli.call(arguments: ["start", "--port=5139", "--duration=1"])
+      cli.call(arguments: ["start", "spec", "--port=5139", "--verbose"])
     end
   end
 end
