@@ -33,6 +33,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "specstorm-wrk"
   spec.add_dependency "specstorm-srv"
   spec.add_dependency "dry-cli"
+  spec.add_dependency "rspec-core"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
