@@ -30,9 +30,8 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "specstorm-wrk"
-  spec.add_dependency "specstorm-srv"
   spec.add_dependency "dry-cli"
+  spec.add_dependency "sinatra"
   spec.add_dependency "rspec-core"
 
   # For more information and examples about making a new gem, check out our

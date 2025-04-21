@@ -11,5 +11,6 @@ gem "rspec", "~> 3.0"
 
 gem "standard", "~> 1.3"
 
-gem "specstorm-srv", github: "danielwestendorf/specstorm-srv"
-gem "specstorm-wrk", github: "danielwestendorf/specstorm-wrk"
+gem "webmock"
+
+gem "rack-test"

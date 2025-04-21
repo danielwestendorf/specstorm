@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+require "webmock/rspec"
+
+ENV["RACK_ENV"] = "test"
+require "rack/test"
+
 require "specstorm"
 
 RSpec.configure do |config|
@@ -12,4 +17,6 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  config.include Rack::Test::Methods
 end
