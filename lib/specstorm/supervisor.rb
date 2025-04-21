@@ -41,6 +41,7 @@ module Specstorm
 
       while active?
         if infrastructure_process_missing?
+          puts
           puts "We lost an infrastructure process. Exiting..."
           # Something went wrong, let's out put everything even if we aren't vebose
           processes.each do |process|
@@ -53,6 +54,7 @@ module Specstorm
 
           break
         elsif only_infrastructure_processes_remain?
+          puts
           interrupt!
           puts "Only infrastructure processes remain. Exiting..."
 
