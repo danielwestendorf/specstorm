@@ -5,6 +5,7 @@ require "strscan"
 module Specstorm
   class ForkedProcess
     FLUSH_DELIMINATOR = "SPECSTORM--FLUSH--DELIMINATOR"
+    FLUSH_DELIMINATOR_REGEXP = Regexp.new FLUSH_DELIMINATOR
 
     attr_accessor :pid, :infrastructure, :stdout, :stderr
     attr_reader :stdout_reader, :stdout_writer, :stderr_reader, :stderr_writer
@@ -91,7 +92,7 @@ module Specstorm
         scanner = StringScanner.new(buffer)
         chunks = []
 
-        while (match = scanner.scan_until(FLUSH_DELIMINATOR))
+        while (match = scanner.scan_until(FLUSH_DELIMINATOR_REGEXP))
           chunks << match.sub(FLUSH_DELIMINATOR, "")
         end
 
